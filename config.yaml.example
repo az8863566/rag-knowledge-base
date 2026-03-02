@@ -1,0 +1,26 @@
+siliconflow:
+  api_key: "sk-your-api-key-here"
+  base_url: "https://api.siliconflow.cn/v1"
+
+embedding:
+  model: "BAAI/bge-m3"
+  batch_size: 500
+
+reranking:
+  model: "BAAI/bge-reranker-v2-m3"
+  top_k: 10
+
+text_splitting:
+  chunk_size: 800
+  chunk_overlap: 100
+
+vectorstore:
+  persist_directory: "./faiss_data"
+  collection_name: "knowledge_base"
+
+retrieval:
+  similarity_threshold: 0.8  # 相似度阈值，低于此值认为未命中
+  initial_k: 100
+
+mcp:
+  name: "RAG Knowledge Base"
