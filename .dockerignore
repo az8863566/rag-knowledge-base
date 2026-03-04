@@ -1,0 +1,12 @@
+__pycache__
+*.pyc
+*.pyo
+.git
+.gitignore
+config.yaml
+faiss_data/
+*.md
+.venv
+venv
+.env
+demo.txt

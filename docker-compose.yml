@@ -1,0 +1,14 @@
+services:
+  rag-mcp:
+    build: .
+    container_name: rag-knowledge-base
+    ports:
+      - "18000:18000"  # API 服务
+      - "18001:18001"  # MCP 服务
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - ./faiss_data:/app/faiss_data
+      - ./uploads:/app/uploads
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Shanghai
