@@ -230,6 +230,10 @@ class VectorStore:
         if not self._initialized:
             self.initialize()
             
+        # 从磁盘重新加载数据，确保获取最新内容
+        self._reload_metadata()
+        self._reload_index()
+            
         if n_results is None:
             n_results = config.retrieval_initial_k
 
@@ -274,11 +278,49 @@ class VectorStore:
         """获取存储统计信息"""
         if not self._initialized:
             self.initialize()
+            
+        # 从磁盘重新加载，确保获取最新数据
+        self._reload_metadata()
+        self._reload_index()
+        
         return {
             "total_chunks": len(self._documents),
             "total_vectors": self._index.ntotal if self._index else 0,
             "collection_name": config.collection_name,
         }
+
+    def _reload_metadata(self) -> bool:
+        """重新从磁盘加载元数据（用于多进程同步）"""
+        paths = self._get_persist_paths()
+        
+        if not Path(paths["meta"]).exists():
+            return False
+            
+        try:
+            with open(paths["meta"], "rb") as f:
+                self._metadatas = pickle.load(f)
+            with open(paths["docs"], "rb") as f:
+                self._documents = pickle.load(f)
+            with open(paths["mapping"], "rb") as f:
+                self._id_to_index = pickle.load(f)
+            return True
+        except Exception as e:
+            logger.warning(f"重新加载元数据失败: {e}")
+            return False
+
+    def _reload_index(self) -> bool:
+        """重新从磁盘加载 FAISS 索引（用于多进程同步）"""
+        paths = self._get_persist_paths()
+        
+        if not Path(paths["index"]).exists():
+            return False
+            
+        try:
+            self._index = faiss.read_index(paths["index"])
+            return True
+        except Exception as e:
+            logger.warning(f"重新加载索引失败: {e}")
+            return False
 
     def list_documents(self) -> list[dict]:
         """
@@ -290,6 +332,9 @@ class VectorStore:
         if not self._initialized:
             self.initialize()
             
+        # 从磁盘重新加载元数据，以获取其他进程（API服务器）写入的最新数据
+        self._reload_metadata()
+        
         # 按 doc_id 分组统计
         doc_groups: dict[str, dict] = {}
         for meta in self._metadatas:
